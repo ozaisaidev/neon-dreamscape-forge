@@ -11,22 +11,24 @@ const MouseTracker: React.FC = () => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Set canvas to full screen
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      initSmoke(); // Re-initialize smoke when resizing
-    };
-
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    // Smoke settings
+    // Initialize particles array before it's used
     let particles: Particle[] = [];
+    // Smoke settings
     const particleCount = 700; // More particles for denser smoke
     let mouseX = 0;
     let mouseY = 0;
     let mouseRadius = 100; // Area of influence around the mouse
+
+    // Set canvas to full screen
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // Only initialize the smoke after declaring particles array
+      initSmoke(); 
+    };
+
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
 
     // Gradient colors for the smoke
     const blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
@@ -161,8 +163,6 @@ const MouseTracker: React.FC = () => {
         particles.push(new Particle(x, y, 20, redGradient));
       }
     }
-
-    initSmoke();
 
     // Mouse event handlers
     const handleMouseMove = (event: MouseEvent) => {
