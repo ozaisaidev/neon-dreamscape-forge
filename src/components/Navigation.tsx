@@ -1,16 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const Navigation = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(location.pathname);
+  const activeTab = location.pathname;
   
-  useEffect(() => {
-    setActiveTab(location.pathname);
-  }, [location]);
-
   const navItems = [
     { path: '/', label: 'About Me' },
     { path: '/projects', label: 'Projects' },

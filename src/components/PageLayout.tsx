@@ -2,6 +2,7 @@
 import React, { ReactNode } from 'react';
 import Navigation from './Navigation';
 import ThreeScene from './ThreeScene';
+import { useLocation } from 'react-router-dom';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -9,6 +10,9 @@ interface PageLayoutProps {
 }
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children, pageType }) => {
+  // We'll check if we're in a route context here
+  const location = useLocation();
+  
   return (
     <div className="min-h-screen bg-dark text-white overflow-hidden relative">
       {/* 3D background */}
