@@ -11,36 +11,7 @@ const MouseTracker: React.FC = () => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Initialize particles array before it's used
-    let particles: Particle[] = [];
-    // Smoke settings
-    const particleCount = 700; // More particles for denser smoke
-    let mouseX = 0;
-    let mouseY = 0;
-    let mouseRadius = 100; // Area of influence around the mouse
-
-    // Set canvas to full screen
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      // Only initialize the smoke after declaring particles array
-      initSmoke(); 
-    };
-
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    // Gradient colors for the smoke
-    const blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
-    blueGradient.addColorStop(0, 'rgba(41, 72, 135, 0)');
-    blueGradient.addColorStop(0.5, 'rgba(50, 87, 164, 0.6)');
-    blueGradient.addColorStop(1, 'rgba(33, 58, 108, 0)');
-
-    const redGradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width, canvas.height);
-    redGradient.addColorStop(0, 'rgba(135, 41, 66, 0)');
-    redGradient.addColorStop(0.5, 'rgba(164, 50, 78, 0.6)');
-    redGradient.addColorStop(1, 'rgba(108, 33, 54, 0)');
-
+    // Particle class definition moved to the top of useEffect
     class Particle {
       x: number;
       y: number;
@@ -118,6 +89,36 @@ const MouseTracker: React.FC = () => {
         this.y += dy2 * this.ease;
       }
     }
+
+    // Initialize particles array before it's used
+    let particles: Particle[] = [];
+    // Smoke settings
+    const particleCount = 700; // More particles for denser smoke
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseRadius = 100; // Area of influence around the mouse
+
+    // Set canvas to full screen
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // Only initialize the smoke after declaring particles array
+      initSmoke(); 
+    };
+
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
+
+    // Gradient colors for the smoke
+    const blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
+    blueGradient.addColorStop(0, 'rgba(41, 72, 135, 0)');
+    blueGradient.addColorStop(0.5, 'rgba(50, 87, 164, 0.6)');
+    blueGradient.addColorStop(1, 'rgba(33, 58, 108, 0)');
+
+    const redGradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width, canvas.height);
+    redGradient.addColorStop(0, 'rgba(135, 41, 66, 0)');
+    redGradient.addColorStop(0.5, 'rgba(164, 50, 78, 0.6)');
+    redGradient.addColorStop(1, 'rgba(108, 33, 54, 0)');
 
     // Initialize smoke particles
     function initSmoke() {
