@@ -26,146 +26,126 @@ const MouseTracker: React.FC = () => {
       y: number;
       size: number;
       color: string;
-      speedX: number;
-      speedY: number;
-      lifespan: number;
-      maxLifespan: number;
+      baseX: number;
+      baseY: number;
+      density: number;
+      distance: number;
 
       constructor(x: number, y: number, size: number, color: string) {
         this.x = x;
         this.y = y;
-        this.size = Math.random() * size + 1;
+        this.baseX = x;
+        this.baseY = y;
+        this.size = size;
         this.color = color;
-        this.speedX = Math.random() * 1 - 0.5;
-        this.speedY = Math.random() * 1 - 0.5;
-        this.maxLifespan = 150;
-        this.lifespan = this.maxLifespan;
-      }
-
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.lifespan -= 1;
-        
-        if (this.size > 0.2) this.size -= 0.05;
+        this.density = (Math.random() * 10) + 2;
+        this.distance = 0;
       }
 
       draw(ctx: CanvasRenderingContext2D) {
-        const opacity = this.lifespan / this.maxLifespan;
-        ctx.globalAlpha = opacity;
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.closePath();
         ctx.fill();
-        ctx.globalAlpha = 1;
+      }
+
+      update(mouseX: number, mouseY: number) {
+        // Calculate distance between particle and mouse
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        this.distance = distance;
+        
+        const forceDirectionX = dx / distance;
+        const forceDirectionY = dy / distance;
+        
+        const maxDistance = 100;
+        let force = (maxDistance - distance) / maxDistance;
+        if (force < 0) force = 0;
+        
+        const directionX = forceDirectionX * force * this.density * -1;
+        const directionY = forceDirectionY * force * this.density * -1;
+        
+        if (distance < maxDistance) {
+          this.x += directionX;
+          this.y += directionY;
+        } else {
+          // Return to original position if not influenced by mouse
+          if (this.x !== this.baseX) {
+            const dx = this.baseX - this.x;
+            this.x += dx / 10;
+          }
+          if (this.y !== this.baseY) {
+            const dy = this.baseY - this.y;
+            this.y += dy / 10;
+          }
+        }
       }
     }
 
-    // Dust cloud particles
-    let particles: Particle[] = [];
+    // Create dust clouds
+    const createDustClouds = () => {
+      const particles: Particle[] = [];
+      const particleCount = 250;
+      
+      // First cloud - blue-ish tint (left side)
+      const blueTints = ['rgba(147, 149, 255, 0.5)', 'rgba(164, 166, 255, 0.4)', 'rgba(184, 186, 255, 0.3)'];
+      for (let i = 0; i < particleCount; i++) {
+        const size = Math.random() * 3 + 1;
+        const x = (Math.random() * canvas.width * 0.4) + (canvas.width * 0.1);
+        const y = (Math.random() * canvas.height * 0.7) + (canvas.height * 0.15);
+        const color = blueTints[Math.floor(Math.random() * blueTints.length)];
+        particles.push(new Particle(x, y, size, color));
+      }
+      
+      // Second cloud - reddish tint (right side)
+      const redTints = ['rgba(255, 111, 145, 0.5)', 'rgba(255, 130, 160, 0.4)', 'rgba(255, 150, 175, 0.3)'];
+      for (let i = 0; i < particleCount; i++) {
+        const size = Math.random() * 3 + 1;
+        const x = (Math.random() * canvas.width * 0.4) + (canvas.width * 0.5);
+        const y = (Math.random() * canvas.height * 0.7) + (canvas.height * 0.15);
+        const color = redTints[Math.floor(Math.random() * redTints.length)];
+        particles.push(new Particle(x, y, size, color));
+      }
+      
+      return particles;
+    };
+
+    const particles = createDustClouds();
+    
     let mouseX = 0;
     let mouseY = 0;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-    let isMouseMoving = false;
     
-    // More subtle, professional colors for dust particles
-    const colors = ['rgba(155, 135, 245, 0.6)', 'rgba(214, 188, 250, 0.6)']; // Subtle purple tones
-
-    // Mouse event handlers
+    // Mouse event handler
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      isMouseMoving = true;
-      
-      // Calculate mouse speed for splash effect
-      const mouseSpeed = Math.sqrt(
-        Math.pow(mouseX - lastMouseX, 2) + 
-        Math.pow(mouseY - lastMouseY, 2)
-      );
-      
-      // Create particles based on mouse speed (more subtle)
-      const particleCount = Math.min(3 + Math.floor(mouseSpeed / 3), 8);
-      
-      for (let i = 0; i < particleCount; i++) {
-        // Add variation to particle position
-        const offsetX = (Math.random() - 0.5) * 15;
-        const offsetY = (Math.random() - 0.5) * 15;
-        
-        particles.push(
-          new Particle(
-            mouseX + offsetX, 
-            mouseY + offsetY, 
-            Math.random() * 3 + 1,
-            colors[Math.floor(Math.random() * colors.length)]
-          )
-        );
-      }
-      
-      lastMouseX = mouseX;
-      lastMouseY = mouseY;
     };
-
-    // Create initial dust cloud (more subtle)
-    const createInitialDustCloud = () => {
-      const particleCount = 80;
-      
-      for (let i = 0; i < particleCount; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        const size = Math.random() * 2 + 1;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        particles.push(new Particle(x, y, size, color));
-        
-        // Make initial particles more stable
-        particles[i].speedX = (Math.random() - 0.5) * 0.3;
-        particles[i].speedY = (Math.random() - 0.5) * 0.3;
-        particles[i].lifespan = 300 + Math.random() * 200;
-        particles[i].maxLifespan = particles[i].lifespan;
-      }
+    
+    // Touch event handler for mobile
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      mouseX = e.touches[0].clientX;
+      mouseY = e.touches[0].clientY;
     };
-
-    createInitialDustCloud();
     
     // Animation loop
     const animate = () => {
-      // Clear canvas with slight fade for trail effect
-      ctx.fillStyle = 'rgba(15, 14, 23, 0.3)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Update and draw particles
       for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
+        particles[i].update(mouseX, mouseY);
         particles[i].draw(ctx);
-        
-        // Remove dead particles
-        if (particles[i].lifespan <= 0 || particles[i].size <= 0.2) {
-          particles.splice(i, 1);
-          i--;
-        }
       }
       
-      // Add new ambient particles occasionally (less frequently)
-      if (particles.length < 60 && Math.random() > 0.98) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        particles.push(
-          new Particle(
-            x, 
-            y, 
-            Math.random() * 2 + 1,
-            colors[Math.floor(Math.random() * colors.length)]
-          )
-        );
-      }
-      
-      isMouseMoving = false;
       requestAnimationFrame(animate);
     };
 
     // Set up event listeners
     canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     
     // Start animation
     animate();
@@ -174,6 +154,7 @@ const MouseTracker: React.FC = () => {
     return () => {
       window.removeEventListener('resize', setCanvasSize);
       canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
