@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 const MouseTracker: React.FC = () => {
@@ -9,6 +10,19 @@ const MouseTracker: React.FC = () => {
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
+
+    // Initialize particles array early
+    let particles: Particle[] = [];
+
+    // Smoke settings
+    const particleCount = 700;
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseRadius = 100;
+
+    // Initialize gradients
+    let blueGradient: CanvasGradient;
+    let redGradient: CanvasGradient;
 
     // Particle class definition
     class Particle {
@@ -82,40 +96,6 @@ const MouseTracker: React.FC = () => {
       }
     }
 
-    // Smoke settings
-    const particleCount = 700;
-    let mouseX = 0;
-    let mouseY = 0;
-    let mouseRadius = 100;
-
-    // Initialize gradients
-    let blueGradient: CanvasGradient;
-    let redGradient: CanvasGradient;
-
-    // Set canvas to full screen
-    const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
-      blueGradient.addColorStop(0, 'rgba(41, 72, 135, 0)');
-      blueGradient.addColorStop(0.5, 'rgba(50, 87, 164, 0.6)');
-      blueGradient.addColorStop(1, 'rgba(33, 58, 108, 0)');
-
-      redGradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width, canvas.height);
-      redGradient.addColorStop(0, 'rgba(135, 41, 66, 0)');
-      redGradient.addColorStop(0.5, 'rgba(164, 50, 78, 0.6)');
-      redGradient.addColorStop(1, 'rgba(108, 33, 54, 0)');
-
-      initSmoke(); 
-    };
-
-    setCanvasSize();
-    window.addEventListener('resize', setCanvasSize);
-
-    // Initialize particles array
-    let particles: Particle[] = [];
-
     // Initialize smoke particles
     function initSmoke() {
       particles = [];
@@ -156,6 +136,29 @@ const MouseTracker: React.FC = () => {
         particles.push(new Particle(x, y, 20, redGradient));
       }
     }
+
+    // Set canvas to full screen
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Create gradients with updated canvas dimensions
+      blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
+      blueGradient.addColorStop(0, 'rgba(41, 72, 135, 0)');
+      blueGradient.addColorStop(0.5, 'rgba(50, 87, 164, 0.6)');
+      blueGradient.addColorStop(1, 'rgba(33, 58, 108, 0)');
+
+      redGradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width, canvas.height);
+      redGradient.addColorStop(0, 'rgba(135, 41, 66, 0)');
+      redGradient.addColorStop(0.5, 'rgba(164, 50, 78, 0.6)');
+      redGradient.addColorStop(1, 'rgba(108, 33, 54, 0)');
+
+      // Now that gradients are initialized, we can safely call initSmoke
+      initSmoke(); 
+    };
+
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
 
     // Mouse event handlers
     const handleMouseMove = (event: MouseEvent) => {
