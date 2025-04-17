@@ -2,10 +2,12 @@
 import React from 'react';
 import PageLayout from '@/components/PageLayout';
 import { Bot, Code, Trophy } from 'lucide-react';
+import MouseTracker from '@/components/MouseTracker';
 
 const AboutMe = () => {
   return (
     <PageLayout pageType="aboutMe">
+      <MouseTracker />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Header Section */}
         <div className="col-span-1 md:col-span-3 text-center mb-8">
@@ -108,7 +110,7 @@ const InterestCard: React.FC<InterestCardProps> = ({ icon, title, description, c
   };
   
   return (
-    <div className={`glass-card p-6 border transition-all duration-300 hover:scale-105 ${colorClasses[color]} interactive-card animate-float`}>
+    <div className={`glass-card p-6 border transition-all duration-300 hover:scale-105 ${colorClasses[color]} interactive-card`}>
       <div className="flex flex-col items-center text-center">
         <div className="mb-4">
           {icon}

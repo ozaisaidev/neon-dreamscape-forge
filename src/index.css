@@ -1,8 +1,9 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -45,12 +46,12 @@
   }
 
   body {
-    @apply bg-dark text-foreground font-inter selection:bg-neon-purple/25;
+    @apply bg-dark text-foreground font-sf selection:bg-neon-purple/25;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-space font-bold;
+    @apply font-sf font-bold;
   }
 
   /* Custom scrollbar */

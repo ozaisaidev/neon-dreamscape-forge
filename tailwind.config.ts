@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -160,7 +161,8 @@ export default {
 			},
 			fontFamily: {
 				'space': ['"Space Grotesk"', 'sans-serif'],
-				'inter': ['"Inter"', 'sans-serif']
+				'inter': ['"Inter"', 'sans-serif'],
+				'sf': ['"SF Pro Display"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
 			}
 		}
 	},
