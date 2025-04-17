@@ -34,11 +34,11 @@ const MouseTracker: React.FC = () => {
       constructor(x: number, y: number, size: number, color: string) {
         this.x = x;
         this.y = y;
-        this.size = Math.random() * size + 2;
+        this.size = Math.random() * size + 1;
         this.color = color;
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
-        this.maxLifespan = 100;
+        this.speedX = Math.random() * 1 - 0.5;
+        this.speedY = Math.random() * 1 - 0.5;
+        this.maxLifespan = 150;
         this.lifespan = this.maxLifespan;
       }
 
@@ -47,18 +47,17 @@ const MouseTracker: React.FC = () => {
         this.y += this.speedY;
         this.lifespan -= 1;
         
-        if (this.size > 0.2) this.size -= 0.1;
+        if (this.size > 0.2) this.size -= 0.05;
       }
 
       draw(ctx: CanvasRenderingContext2D) {
+        const opacity = this.lifespan / this.maxLifespan;
+        ctx.globalAlpha = opacity;
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Add glow effect
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = 15;
+        ctx.globalAlpha = 1;
       }
     }
 
@@ -70,8 +69,8 @@ const MouseTracker: React.FC = () => {
     let lastMouseY = 0;
     let isMouseMoving = false;
     
-    // Colors for dust particles
-    const colors = ['#9b87f5', '#D6BCFA']; // Purple tones
+    // More subtle, professional colors for dust particles
+    const colors = ['rgba(155, 135, 245, 0.6)', 'rgba(214, 188, 250, 0.6)']; // Subtle purple tones
 
     // Mouse event handlers
     const handleMouseMove = (e: MouseEvent) => {
@@ -85,19 +84,19 @@ const MouseTracker: React.FC = () => {
         Math.pow(mouseY - lastMouseY, 2)
       );
       
-      // Create particles based on mouse speed
-      const particleCount = Math.min(5 + Math.floor(mouseSpeed / 2), 15);
+      // Create particles based on mouse speed (more subtle)
+      const particleCount = Math.min(3 + Math.floor(mouseSpeed / 3), 8);
       
       for (let i = 0; i < particleCount; i++) {
         // Add variation to particle position
-        const offsetX = (Math.random() - 0.5) * 20;
-        const offsetY = (Math.random() - 0.5) * 20;
+        const offsetX = (Math.random() - 0.5) * 15;
+        const offsetY = (Math.random() - 0.5) * 15;
         
         particles.push(
           new Particle(
             mouseX + offsetX, 
             mouseY + offsetY, 
-            Math.random() * 6 + 2,
+            Math.random() * 3 + 1,
             colors[Math.floor(Math.random() * colors.length)]
           )
         );
@@ -107,21 +106,21 @@ const MouseTracker: React.FC = () => {
       lastMouseY = mouseY;
     };
 
-    // Create initial dust cloud
+    // Create initial dust cloud (more subtle)
     const createInitialDustCloud = () => {
-      const particleCount = 150;
+      const particleCount = 80;
       
       for (let i = 0; i < particleCount; i++) {
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
-        const size = Math.random() * 5 + 1;
+        const size = Math.random() * 2 + 1;
         const color = colors[Math.floor(Math.random() * colors.length)];
         
         particles.push(new Particle(x, y, size, color));
         
         // Make initial particles more stable
-        particles[i].speedX = (Math.random() - 0.5) * 0.5;
-        particles[i].speedY = (Math.random() - 0.5) * 0.5;
+        particles[i].speedX = (Math.random() - 0.5) * 0.3;
+        particles[i].speedY = (Math.random() - 0.5) * 0.3;
         particles[i].lifespan = 300 + Math.random() * 200;
         particles[i].maxLifespan = particles[i].lifespan;
       }
@@ -132,7 +131,7 @@ const MouseTracker: React.FC = () => {
     // Animation loop
     const animate = () => {
       // Clear canvas with slight fade for trail effect
-      ctx.fillStyle = 'rgba(15, 14, 23, 0.2)';
+      ctx.fillStyle = 'rgba(15, 14, 23, 0.3)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Update and draw particles
@@ -147,23 +146,21 @@ const MouseTracker: React.FC = () => {
         }
       }
       
-      // Add new ambient particles occasionally
-      if (particles.length < 100 && Math.random() > 0.95) {
+      // Add new ambient particles occasionally (less frequently)
+      if (particles.length < 60 && Math.random() > 0.98) {
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
         particles.push(
           new Particle(
             x, 
             y, 
-            Math.random() * 3 + 1,
+            Math.random() * 2 + 1,
             colors[Math.floor(Math.random() * colors.length)]
           )
         );
       }
       
-      // Reset mouse movement flag
       isMouseMoving = false;
-      
       requestAnimationFrame(animate);
     };
 
