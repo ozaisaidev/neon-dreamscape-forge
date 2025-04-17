@@ -84,8 +84,8 @@ const MouseTracker: React.FC = () => {
       }
     }
 
-    // Create dust clouds
-    const createDustClouds = () => {
+    // Create smoke clouds
+    const createSmokeClouds = () => {
       const particles: Particle[] = [];
       const particleCount = 250;
       
@@ -112,7 +112,7 @@ const MouseTracker: React.FC = () => {
       return particles;
     };
 
-    const particles = createDustClouds();
+    const particles = createSmokeClouds();
     
     let mouseX = 0;
     let mouseY = 0;
