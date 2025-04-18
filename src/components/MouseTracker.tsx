@@ -92,17 +92,17 @@ const MouseTracker: React.FC = () => {
     const setCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      // No need to re-initialize particles here anymore
     };
 
     setCanvasSize();
 
-    // Handlers
+    // Declare resizeTimeout with proper typing
+    let resizeTimeout: NodeJS.Timeout | null = null;
+
     const handleResize = () => {
       if (resizeTimeout) window.clearTimeout(resizeTimeout);
-      resizeTimeout = window.setTimeout(() => {
+      resizeTimeout = setTimeout(() => {
         setCanvasSize();
-        // Clear particles on resize to avoid weird positioning
         particlesRef.current = [];
       }, 200);
     };
@@ -185,7 +185,7 @@ const MouseTracker: React.FC = () => {
       canvas.removeEventListener('touchmove', handleMouseMove);
       canvas.removeEventListener('touchstart', handleMouseMove);
       window.removeEventListener('mouseout', handleMouseOut);
-      if (resizeTimeout) window.clearTimeout(resizeTimeout);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
       if (mouseMoveTimeoutRef.current) clearTimeout(mouseMoveTimeoutRef.current);
       if (animationFrameIdRef.current) {
         cancelAnimationFrame(animationFrameIdRef.current);
