@@ -1,255 +1,205 @@
-
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 const MouseTracker: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]); // Store particles in a ref
+  const mouseRef = useRef({ x: -200, y: -200 }); // Start mouse off-screen
+  const isMouseMovingRef = useRef(false);
+  const mouseMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null); // To cancel animation frame
+
+  // --- Configuration ---
+  const PARTICLE_COUNT_PER_MOVE = 4;  // How many particles per frame when moving
+  const PARTICLE_BASE_SIZE = 25;      // Base size (will vary)
+  const PARTICLE_SIZE_VARIATION = 15; // How much size can vary (+/-)
+  const PARTICLE_LIFESPAN_DECAY = 0.018;// How fast particles fade/shrink (lower = longer)
+  const PARTICLE_DRIFT_X = 0.5;       // Max horizontal drift speed
+  const PARTICLE_DRIFT_Y = -0.8;      // Max vertical drift speed (negative for upward)
+  const CANVAS_CLEAR_OPACITY = 0.15;  // How much old frames linger (0=clear, 1=never clear)
+  const BACKGROUND_COLOR_RGBA = 'rgba(15, 14, 23)'; // Match your desired background for clearing
+
+  // Define Particle class
+  class Particle {
+    x: number;
+    y: number;
+    size: number;
+    opacity: number;
+    vx: number;
+    vy: number;
+    decay: number;
+    initialSize: number;
+
+    constructor(x: number, y: number) {
+      this.x = x + (Math.random() - 0.5) * 10; // Add slight position offset
+      this.y = y + (Math.random() - 0.5) * 10;
+      const baseSize = PARTICLE_BASE_SIZE + (Math.random() * 2 - 1) * PARTICLE_SIZE_VARIATION;
+      this.size = Math.max(5, baseSize); // Ensure minimum size
+      this.initialSize = this.size;
+      this.opacity = 0.8 + Math.random() * 0.2; // Start slightly varied opacity
+      this.vx = (Math.random() - 0.5) * PARTICLE_DRIFT_X * 2; // Horizontal velocity
+      this.vy = Math.random() * PARTICLE_DRIFT_Y - 0.2;       // Vertical velocity (mostly up)
+      this.decay = PARTICLE_LIFESPAN_DECAY * (0.8 + Math.random() * 0.4); // Vary lifespan slightly
+    }
+
+    update() {
+      // Update position
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // Update opacity and size
+      this.opacity -= this.decay;
+      // Shrink based on decay - adjust multiplier as needed
+      this.size -= this.decay * (this.initialSize * 0.4);
+    }
+
+    draw(ctx: CanvasRenderingContext2D) {
+      if (this.opacity <= 0 || this.size <= 1) return; // Don't draw if invisible/tiny
+
+      ctx.save(); // Save context state
+
+      // Create radial gradient for soft smoke effect
+      const radius = Math.max(0, this.size / 2);
+      const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius);
+
+      // Adjust color/alpha - start whiter, fade to grey/transparent
+      const alpha = Math.max(0, this.opacity); // Ensure alpha doesn't go negative
+      gradient.addColorStop(0, `rgba(220, 220, 235, ${alpha * 0.8})`); // Center (slightly whiter/blueish)
+      gradient.addColorStop(0.5, `rgba(200, 200, 210, ${alpha * 0.5})`); // Mid
+      gradient.addColorStop(1, `rgba(180, 180, 190, 0)`);     // Outer edge (transparent grey)
+
+      ctx.fillStyle = gradient;
+      // Using 'lighter' can create a nice glow effect as particles overlap
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Draw the circle
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore(); // Restore context state (includes globalCompositeOperation)
+    }
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d', { willReadFrequently: false });
     if (!ctx) return;
 
-    // Initialize particles array early
-    let particles: Particle[] = [];
+    particlesRef.current = [];
 
-    // Reduce particle count for better performance
-    const particleCount = 300; // Reduced from 700
-    let mouseX = 0;
-    let mouseY = 0;
-    let mouseRadius = 60; // Reduced radius for better performance
-
-    // Initialize gradients
-    let blueGradient: CanvasGradient;
-    let redGradient: CanvasGradient;
-
-    // Last update timestamp for throttling
-    let lastFrameTime = 0;
-    const fps = 30; // Target FPS
-    const fpsInterval = 1000 / fps;
-
-    // Particle class definition with optimized calculations
-    class Particle {
-      x: number;
-      y: number;
-      baseX: number;
-      baseY: number;
-      size: number;
-      density: number;
-      gradient: CanvasGradient;
-      opacity: number;
-      vx: number;
-      vy: number;
-      friction: number;
-      ease: number;
-      active: boolean; // Flag to determine if particle needs updating
-
-      constructor(x: number, y: number, size: number, gradient: CanvasGradient) {
-        this.x = x;
-        this.y = y;
-        this.baseX = x;
-        this.baseY = y;
-        this.size = Math.random() * size + size / 2;
-        this.density = (Math.random() * 5) + 1; // Reduced density range
-        this.gradient = gradient;
-        this.opacity = Math.random() * 0.3 + 0.1; // Reduced opacity
-        this.vx = 0;
-        this.vy = 0;
-        this.friction = 0.95;
-        this.ease = 0.03 * Math.random() + 0.01;
-        this.active = false;
-      }
-
-      draw(ctx: CanvasRenderingContext2D) {
-        if (this.opacity <= 0.05) return; // Skip drawing nearly invisible particles
-        
-        const particleGradient = ctx.createRadialGradient(
-          this.x, this.y, 0,
-          this.x, this.y, this.size
-        );
-        
-        particleGradient.addColorStop(0, `rgba(255, 255, 255, ${this.opacity})`);
-        particleGradient.addColorStop(0.5, `rgba(200, 200, 200, ${this.opacity * 0.5})`);
-        particleGradient.addColorStop(1, `rgba(150, 150, 150, 0)`);
-
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = particleGradient;
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fill();
-      }
-
-      update() {
-        // Only perform mouse interaction if particle is near the mouse
-        const dx = mouseX - this.x;
-        const dy = mouseY - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        this.active = distance < mouseRadius * 2;
-        
-        if (this.active) {
-          if (distance < mouseRadius) {
-            const angle = Math.atan2(dy, dx);
-            const force = (mouseRadius - distance) / mouseRadius;
-            
-            this.vx -= Math.cos(angle) * force * this.density;
-            this.vy -= Math.sin(angle) * force * this.density;
-          }
-          
-          this.x += this.vx;
-          this.y += this.vy;
-          this.vx *= this.friction;
-          this.vy *= this.friction;
-          
-          const dx2 = this.baseX - this.x;
-          const dy2 = this.baseY - this.y;
-          this.x += dx2 * this.ease;
-          this.y += dy2 * this.ease;
-        }
-      }
-    }
-
-    // Initialize smoke particles
-    function initSmoke() {
-      particles = [];
-      
-      const leftCloud = {
-        x: canvas.width * 0.3,
-        y: canvas.height * 0.5,
-        width: canvas.width * 0.4,
-        height: canvas.height * 0.7
-      };
-      
-      const rightCloud = {
-        x: canvas.width * 0.6,
-        y: canvas.height * 0.5,
-        width: canvas.width * 0.4,
-        height: canvas.height * 0.7
-      };
-      
-      for (let i = 0; i < particleCount / 2; i++) {
-        const radius = Math.sqrt(-2 * Math.log(Math.random()));
-        const theta = 2 * Math.PI * Math.random();
-        const xOffset = radius * Math.cos(theta) * leftCloud.width * 0.3;
-        const yOffset = radius * Math.sin(theta) * leftCloud.height * 0.3;
-        const x = leftCloud.x + xOffset;
-        const y = leftCloud.y + yOffset;
-        
-        particles.push(new Particle(x, y, 10, blueGradient)); // Reduced size
-      }
-      
-      for (let i = 0; i < particleCount / 2; i++) {
-        const radius = Math.sqrt(-2 * Math.log(Math.random()));
-        const theta = 2 * Math.PI * Math.random();
-        const xOffset = radius * Math.cos(theta) * rightCloud.width * 0.3;
-        const yOffset = radius * Math.sin(theta) * rightCloud.height * 0.3;
-        const x = rightCloud.x + xOffset;
-        const y = rightCloud.y + yOffset;
-        
-        particles.push(new Particle(x, y, 10, redGradient)); // Reduced size
-      }
-    }
-
-    // Set canvas to full screen
     const setCanvasSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-
-      // Create gradients with updated canvas dimensions
-      blueGradient = ctx.createLinearGradient(0, 0, canvas.width / 2, canvas.height);
-      blueGradient.addColorStop(0, 'rgba(41, 72, 135, 0)');
-      blueGradient.addColorStop(0.5, 'rgba(50, 87, 164, 0.6)');
-      blueGradient.addColorStop(1, 'rgba(33, 58, 108, 0)');
-
-      redGradient = ctx.createLinearGradient(canvas.width / 2, 0, canvas.width, canvas.height);
-      redGradient.addColorStop(0, 'rgba(135, 41, 66, 0)');
-      redGradient.addColorStop(0.5, 'rgba(164, 50, 78, 0.6)');
-      redGradient.addColorStop(1, 'rgba(108, 33, 54, 0)');
-
-      // Now that gradients are initialized, we can safely call initSmoke
-      initSmoke(); 
+      // No need to re-initialize particles here anymore
     };
 
     setCanvasSize();
-    
-    // Throttle resize events
-    let resizeTimeout: number | null = null;
+
+    // Handlers
     const handleResize = () => {
       if (resizeTimeout) window.clearTimeout(resizeTimeout);
       resizeTimeout = window.setTimeout(() => {
         setCanvasSize();
+        // Clear particles on resize to avoid weird positioning
+        particlesRef.current = [];
       }, 200);
     };
-    
+
+    const handleMouseMove = (event: MouseEvent | TouchEvent) => {
+        let clientX: number, clientY: number;
+        if (event instanceof MouseEvent) {
+            clientX = event.clientX;
+            clientY = event.clientY;
+        } else if (event.touches && event.touches.length > 0) {
+             // Prevent scroll/refresh on touch devices within canvas
+            event.preventDefault();
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        } else {
+            return; // No position data
+        }
+
+        mouseRef.current.x = clientX;
+        mouseRef.current.y = clientY;
+        isMouseMovingRef.current = true;
+
+        // Reset flag after a short delay if mouse stops
+        if (mouseMoveTimeoutRef.current) clearTimeout(mouseMoveTimeoutRef.current);
+        mouseMoveTimeoutRef.current = setTimeout(() => {
+            isMouseMovingRef.current = false;
+        }, 100); // Reset after 100ms of no movement
+    };
+
+    const handleMouseOut = () => {
+        mouseRef.current.x = -200; // Move logically off-screen
+        mouseRef.current.y = -200;
+        isMouseMovingRef.current = false;
+    };
+
+    // Add event listeners
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('touchmove', handleMouseMove, { passive: false });
+    canvas.addEventListener('touchstart', handleMouseMove, { passive: false });
+    window.addEventListener('mouseout', handleMouseOut);
     window.addEventListener('resize', handleResize);
 
-    // Throttled mouse event handlers
-    let isThrottled = false;
-    const throttleDelay = 16; // About 60fps
-    
-    const handleMouseMove = (event: MouseEvent) => {
-      if (!isThrottled) {
-        mouseX = event.clientX;
-        mouseY = event.clientY;
-        
-        isThrottled = true;
-        setTimeout(() => {
-          isThrottled = false;
-        }, throttleDelay);
+    // Animation loop
+    const animate = () => {
+      // 1. Clear canvas (with fade effect)
+      // Reset composite operation before clearing
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = `${BACKGROUND_COLOR_RGBA}, ${CANVAS_CLEAR_OPACITY})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. Create new particles if mouse is moving
+      if (isMouseMovingRef.current) {
+        for (let i = 0; i < PARTICLE_COUNT_PER_MOVE; i++) {
+          particlesRef.current.push(new Particle(mouseRef.current.x, mouseRef.current.y));
+        }
       }
-    };
-    
-    const handleTouchMove = (event: TouchEvent) => {
-      event.preventDefault();
-      if (!isThrottled) {
-        mouseX = event.touches[0].clientX;
-        mouseY = event.touches[0].clientY;
-        
-        isThrottled = true;
-        setTimeout(() => {
-          isThrottled = false;
-        }, throttleDelay);
+
+      // 3. Update and draw particles (iterate backwards for safe removal)
+      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+        const p = particlesRef.current[i];
+        p.update();
+
+        // Remove particle if faded or too small
+        if (p.opacity <= 0 || p.size <= 1) {
+          particlesRef.current.splice(i, 1);
+        } else {
+          p.draw(ctx); // Pass context to draw method
+        }
       }
+
+      // Request next frame
+      animationFrameIdRef.current = requestAnimationFrame(animate);
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    
-    // Optimized animation loop with frame skipping
-    function animate(timestamp: number) {
-      // Only render if enough time has passed since last frame
-      if (timestamp - lastFrameTime >= fpsInterval) {
-        lastFrameTime = timestamp;
-        
-        // Use a lighter clear method
-        ctx.fillStyle = 'rgba(15, 14, 23, 0.3)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Only update active particles
-        particles.forEach(particle => {
-          particle.update();
-          particle.draw(ctx);
-        });
-      }
-      
-      requestAnimationFrame(animate);
-    }
-    
-    requestAnimationFrame(animate);
+    animationFrameIdRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchmove', handleMouseMove);
+      canvas.removeEventListener('touchstart', handleMouseMove);
+      window.removeEventListener('mouseout', handleMouseOut);
       if (resizeTimeout) window.clearTimeout(resizeTimeout);
+      if (mouseMoveTimeoutRef.current) clearTimeout(mouseMoveTimeoutRef.current);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+      }
     };
-  }, []);
+  }, [PARTICLE_COUNT_PER_MOVE, PARTICLE_BASE_SIZE, PARTICLE_SIZE_VARIATION, 
+      PARTICLE_LIFESPAN_DECAY, PARTICLE_DRIFT_X, PARTICLE_DRIFT_Y, 
+      CANVAS_CLEAR_OPACITY, BACKGROUND_COLOR_RGBA]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-auto"
+      className="fixed inset-0 z-0 pointer-events-auto bg-[rgb(15,14,23)]"
+      style={{ cursor: 'none' }}
     />
   );
 };
