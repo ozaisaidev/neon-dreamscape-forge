@@ -3,6 +3,7 @@ import PageLayout from '@/components/PageLayout';
 import { Bot, Code, Trophy } from 'lucide-react';
 import GradientBackground from '@/components/GradientBackground';
 import { ArrowRight } from 'lucide-react';
+import MouseTracker from '@/components/MouseTracker';
 
 const AboutMe = () => {
   return (

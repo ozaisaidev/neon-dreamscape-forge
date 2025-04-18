@@ -10,7 +10,7 @@ export class Blob {
   vy: number = 0;
   radius: number;
   baseRadiusFactor: number;
-  color: number[];
+  color: readonly number[] | number[]; // Accept readonly arrays
   speed: number;
   repulsion: number;
   returnForce: number;
@@ -18,7 +18,7 @@ export class Blob {
   oscillationOffset: number;
 
   constructor(config: {
-    color: number[];
+    color: readonly number[] | number[];
     baseRadiusFactor: number;
     positionFactor: { x: number; y: number };
     speed: number;
