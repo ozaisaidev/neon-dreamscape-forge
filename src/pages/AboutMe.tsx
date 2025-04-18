@@ -1,13 +1,13 @@
-
 import React from 'react';
 import PageLayout from '@/components/PageLayout';
 import { Bot, Code, Trophy } from 'lucide-react';
-import MouseTracker from '@/components/MouseTracker';
+import GradientBackground from '@/components/GradientBackground';
 import { ArrowRight } from 'lucide-react';
 
 const AboutMe = () => {
   return (
     <PageLayout pageType="aboutMe">
+      <GradientBackground />
       <MouseTracker />
       <div className="grid grid-cols-1 gap-12 max-w-5xl mx-auto px-4 md:px-0">
         {/* Hero Section */}
